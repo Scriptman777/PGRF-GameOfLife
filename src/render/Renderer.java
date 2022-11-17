@@ -30,18 +30,21 @@ public class Renderer {
     private AbstractRenderable fullScreenGrid = new GridTriangles(2,2);
     private AbstractRenderable testGrid = new GridTriangles(3,3);
     private long window;
-    int width, height;
-    double ox, oy;
+    private int width, height;
+    private double ox, oy;
     private boolean mouseButton1 = false;
-    float camSpeed = 0.05f;
-    boolean firstPass = true;
+    private float camSpeed = 0.05f;
+    private boolean pause = false;
 
     //Uniforms
     int loc_uView;
     int loc_uProj;
     int loc_uHeight;
     int loc_uWidth;
-    int loc_firstPass;
+    int loc_uDrawX;
+    int loc_uDrawY;
+    int loc_uAddCells;
+    int loc_uPause;
 
     public Renderer(long window, int width, int height) {
         this.window = window;
@@ -67,8 +70,10 @@ public class Renderer {
         loc_uProj = glGetUniformLocation(shaderProgram3D, "u_Proj");
         loc_uWidth = glGetUniformLocation(shaderProgramGoL, "u_width");
         loc_uHeight = glGetUniformLocation(shaderProgramGoL, "u_height");
-        loc_firstPass = glGetUniformLocation(shaderProgramGoL, "u_firstPass");
-
+        loc_uDrawX = glGetUniformLocation(shaderProgramGoL, "u_drawX");
+        loc_uDrawY = glGetUniformLocation(shaderProgramGoL, "u_drawY");
+        loc_uAddCells = glGetUniformLocation(shaderProgramGoL, "u_addCells");
+        loc_uPause = glGetUniformLocation(shaderProgramGoL, "u_pause");
 
 
         try {
@@ -80,7 +85,11 @@ public class Renderer {
         texture.bind(shaderProgramGoL,"initTexture",0);
 
 
-
+        // No interpolation
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
 
         initControls();
@@ -88,13 +97,9 @@ public class Renderer {
 
 
     public void draw() {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
         drawToTexture();
         drawToScreen();
-        firstPass = false;
     }
 
 
@@ -106,7 +111,10 @@ public class Renderer {
 
         glUniform1i(loc_uHeight, height);
         glUniform1i(loc_uWidth, width);
-        glUniform1i(loc_firstPass, firstPass ? 1 : 0);
+        glUniform1i(loc_uDrawX, (int) ox);
+        glUniform1i(loc_uDrawY, (int) (height - oy));
+        glUniform1i(loc_uAddCells, mouseButton1 ? 1 : 0);
+        glUniform1i(loc_uPause, pause ? 1 : 0);
 
         fullScreenGrid.draw(shaderProgramGoL);
 
@@ -185,6 +193,9 @@ public class Renderer {
                 glfwSetWindowShouldClose(window, true); // We will detect this in the rendering loop
             if (action == GLFW_PRESS || action == GLFW_REPEAT){
                 switch (key) {
+                    case GLFW_KEY_SPACE:
+                        pause = !pause;
+                        break;
                     case GLFW_KEY_W:
                         camera = camera.forward(camSpeed);
                         break;
@@ -202,9 +213,6 @@ public class Renderer {
                         break;
                     case GLFW_KEY_LEFT_SHIFT:
                         camera = camera.up(camSpeed);
-                        break;
-                    case GLFW_KEY_SPACE:
-                        camera = camera.withFirstPerson(!camera.getFirstPerson());
                         break;
                     case GLFW_KEY_R:
                         camera = camera.mulRadius(0.9f);
