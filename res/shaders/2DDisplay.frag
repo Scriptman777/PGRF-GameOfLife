@@ -2,8 +2,12 @@
 
 uniform int time;
 
+uniform sampler2D inTexture;
+
+in vec2 origPos;
+
 out vec4 outColor;
 
 void main() {
-    outColor = vec4(0,1,0, 1.f);
+    outColor = texture(inTexture, origPos);
 }

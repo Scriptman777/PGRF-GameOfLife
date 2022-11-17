@@ -17,7 +17,7 @@ public class Main {
     // The window handle
     private long window;
     private int width = 800;
-    private int height = 600;
+    private int height = 800;
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -97,7 +97,7 @@ public class Main {
         GL.createCapabilities();
 
         // Set the clear color
-        glClearColor(.1f, .1f, .1f, 0.0f);
+        glClearColor(0.f, 0.f, 0.f, 0.0f);
 
 
         Renderer renderer = new Renderer(window, width, height);
