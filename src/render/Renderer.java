@@ -139,8 +139,8 @@ public class Renderer {
     public void drawToScreen() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         glBindFramebuffer(GL_FRAMEBUFFER,0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -175,12 +175,12 @@ public class Renderer {
         glfwSetCursorPosCallback(window, new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double x, double y) {
-                if (mouseButton1) {
+                if (mouseButton1 && use3D) {
                     camera = camera.addAzimuth((double) Math.PI * (ox - x) / width)
                             .addZenith((double) Math.PI * (oy - y) / width);
-                    ox = x;
-                    oy = y;
                 }
+                ox = x;
+                oy = y;
             }
         });
 

@@ -20,6 +20,7 @@ uniform sampler2D inTexture;
 out vec4 outColor;
 
 int hasCell(float x, float y) {
+
     vec2 texPos = vec2(x,y);
 
     vec4 texColor = texture(initTexture,texPos);
@@ -45,7 +46,7 @@ vec4 getCellColor(int cells) {
 
 // Get color of background
 vec4 getSpaceColor() {
-    return vec4(0,0,0,1);
+    return vec4(0.1,0.1,0.1,1);
 }
 
 // The original Conway ruleset
