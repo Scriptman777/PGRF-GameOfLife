@@ -1,9 +1,14 @@
 #version 330
 
-uniform float u_ColorR;
+uniform int time;
+
+uniform sampler2D inTexture;
+
+in vec2 origPos;
 
 out vec4 outColor;
 
 void main() {
-    outColor = vec4(u_ColorR, 0.1f, 0.1f, 1.f);
+    //outColor = texture(inTexture, origPos);
+    outColor = vec4(1,0,0,1);
 }

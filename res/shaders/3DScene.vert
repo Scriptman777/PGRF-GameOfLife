@@ -4,9 +4,12 @@ in vec2 inPos;
 uniform mat4 u_View;
 uniform mat4 u_Proj;
 
+out vec2 origPos;
+
 void main() {
 
     float ratio = 7;
+    origPos = inPos;
     vec2 pos = inPos * ratio - (ratio/2);
 
     float a = 2.f;

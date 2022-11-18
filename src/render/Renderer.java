@@ -28,13 +28,15 @@ public class Renderer {
     private OGLTexture2D texture;
     private OGLRenderTarget renderTargetGoL;
     private AbstractRenderable fullScreenGrid = new GridTriangles(2,2);
-    private AbstractRenderable testGrid = new GridTriangles(3,3);
+    private AbstractRenderable testGrid = new GridTriangles(50,50);
     private long window;
     private int width, height;
+    private int brushSize = 2;
     private double ox, oy;
     private boolean mouseButton1 = false;
     private float camSpeed = 0.05f;
     private boolean pause = false;
+    private boolean use3D = false;
 
     //Uniforms
     int loc_uView;
@@ -45,6 +47,7 @@ public class Renderer {
     int loc_uDrawY;
     int loc_uAddCells;
     int loc_uPause;
+    int loc_uBrushSize;
 
     public Renderer(long window, int width, int height) {
         this.window = window;
@@ -74,6 +77,7 @@ public class Renderer {
         loc_uDrawY = glGetUniformLocation(shaderProgramGoL, "u_drawY");
         loc_uAddCells = glGetUniformLocation(shaderProgramGoL, "u_addCells");
         loc_uPause = glGetUniformLocation(shaderProgramGoL, "u_pause");
+        loc_uBrushSize = glGetUniformLocation(shaderProgramGoL, "u_brushSize");
 
 
         try {
@@ -91,6 +95,7 @@ public class Renderer {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
+        glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
 
         initControls();
     }
@@ -105,7 +110,7 @@ public class Renderer {
 
     public void drawToTexture() {
         // Draw into renderTarget
-        glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
+
         renderTargetGoL.bind();
         glUseProgram(shaderProgramGoL);
 
@@ -115,6 +120,7 @@ public class Renderer {
         glUniform1i(loc_uDrawY, (int) (height - oy));
         glUniform1i(loc_uAddCells, mouseButton1 ? 1 : 0);
         glUniform1i(loc_uPause, pause ? 1 : 0);
+        glUniform1i(loc_uBrushSize, brushSize);
 
         fullScreenGrid.draw(shaderProgramGoL);
 
@@ -122,21 +128,30 @@ public class Renderer {
     }
 
     public void drawToScreen() {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
-        // Draw texture to screen
+
         glBindFramebuffer(GL_FRAMEBUFFER,0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         renderTargetGoL.getColorTexture().bind(shaderProgramGoL,"inTexture",0);
-        glUseProgram(shaderProgram2DDisplay);
 
-        // Useless for now
-        /*
-        glUniformMatrix4fv(loc_uView, false, camera.getViewMatrix().floatArray());
-        glUniformMatrix4fv(loc_uProj, false, projection.floatArray());
-        */
+        if (use3D) {
+            // Draw 3D Scene
+
+            glUseProgram(shaderProgram3D);
+
+            glUniformMatrix4fv(loc_uView, false, camera.getViewMatrix().floatArray());
+            glUniformMatrix4fv(loc_uProj, false, projection.floatArray());
+
+            testGrid.draw(shaderProgram3D);
+        }
+        else {
+            // Draw texture to screen
+
+            glUseProgram(shaderProgram2DDisplay);
+
+            testGrid.draw(shaderProgram2DDisplay);
+        }
 
 
-        fullScreenGrid.draw(shaderProgram2DDisplay);
     }
 
     private void initControls() {
@@ -208,17 +223,22 @@ public class Renderer {
                     case GLFW_KEY_A:
                         camera = camera.left(camSpeed);
                         break;
-                    case GLFW_KEY_LEFT_CONTROL:
-                        camera = camera.down(camSpeed);
-                        break;
                     case GLFW_KEY_LEFT_SHIFT:
-                        camera = camera.up(camSpeed);
+                        use3D = !use3D;
                         break;
                     case GLFW_KEY_R:
                         camera = camera.mulRadius(0.9f);
                         break;
                     case GLFW_KEY_F:
                         camera = camera.mulRadius(1.1f);
+                        break;
+                    case GLFW_KEY_UP:
+                        brushSize++;
+                        break;
+                    case GLFW_KEY_DOWN:
+                        if (brushSize > 1) {
+                            brushSize--;
+                        }
                         break;
                 }
             }

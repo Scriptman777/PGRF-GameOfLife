@@ -9,6 +9,7 @@ uniform int u_drawX;
 uniform int u_drawY;
 uniform int u_addCells;
 uniform int u_pause;
+uniform int u_brushSize;
 
 
 uniform sampler2D initTexture;
@@ -94,7 +95,7 @@ void main() {
 
     // Draw new cells when clicked
     if (u_addCells == 1) {
-        if (gl_FragCoord.x == u_drawX + 0.5f && gl_FragCoord.y == u_drawY + 0.5f) {
+        if (abs(gl_FragCoord.x - u_drawX) < u_brushSize/2.f && abs(gl_FragCoord.y - u_drawY) < u_brushSize/2.f) {
             outColor = getCellColor(livingCells);
         }
 
