@@ -10,6 +10,8 @@ uniform int u_drawY;
 uniform int u_addCells;
 uniform int u_pause;
 uniform int u_brushSize;
+uniform int u_ruleSet;
+uniform int u_clearAll;
 
 
 uniform sampler2D initTexture;
@@ -32,7 +34,7 @@ int hasCell(float x, float y) {
 }
 
 
-// Cell coloring, ready for alternate rulesets
+// Cell coloring, ready for alternate rulesets with more neighbours
 vec4 getCellColor(int cells) {
     vec3 plasmaColor1 = vec3(1.9,0.55,0);
     vec3 plasmaColor2 = vec3(0.226,0.000,0.615);
@@ -41,32 +43,163 @@ vec4 getCellColor(int cells) {
     return vec4(mixed, 1.f);
 }
 
-vec4 simulateStep(int livingCells) {
+// Get color of background
+vec4 getSpaceColor() {
+    return vec4(0,0,0,1);
+}
 
-    int currentCell = hasCell(origPos.x,origPos.y);
-    vec4 stepResult;
-
-
-    // More = Overpopulated and dies
+// The original Conway ruleset
+vec4 stepConway(int livingCells, int currentCell) {
     if (livingCells == 3) {
         // Cell survives, empty is born
-        stepResult = getCellColor(livingCells);
+        return getCellColor(livingCells);
     }
     else if (livingCells == 2) {
         // Cell survives, empty does nothing
         if (currentCell == 1) {
-            stepResult = getCellColor(livingCells);
+            return getCellColor(livingCells);
         }
         else {
-            stepResult = vec4(0,0,0,1);
+            return getSpaceColor();
         }
     }
     else {
-        // Dies of lonelyness :(
-        stepResult = vec4(0,0,0,1);
+        // Dies
+        return getSpaceColor();
     }
 
-    return stepResult;
+}
+
+// Maze creating ruleset
+vec4 stepMaze(int livingCells, int currentCell){
+
+    // Born
+    if (livingCells == 3) {
+        return getCellColor(livingCells);
+    }
+    // Survives
+    else if (livingCells > 0 && livingCells < 6) {
+        if (currentCell == 1) {
+            return getCellColor(livingCells);
+        }
+        else {
+            return getSpaceColor();
+        }
+    }
+    // Dies
+    else {
+        return getSpaceColor();
+    }
+}
+
+// "Walled cities" ruleset
+vec4 stepCities(int livingCells, int currentCell){
+    // Born
+    if (livingCells > 3) {
+        return getCellColor(livingCells);
+    }
+    // Survives
+    else if (livingCells > 1 && livingCells < 6) {
+        if (currentCell == 1) {
+            return getCellColor(livingCells);
+        }
+        else {
+            return getSpaceColor();
+        }
+    }
+    // Dies
+    else {
+        return getSpaceColor();
+    }
+}
+
+// Amoeba ruleset
+vec4 stepAmoeba(int livingCells, int currentCell){
+    // Born
+    if (livingCells == 3 || livingCells == 5 || livingCells == 7) {
+        return getCellColor(livingCells);
+    }
+    // Survives
+    else if (livingCells == 1 || livingCells == 3 || livingCells == 5 || livingCells == 8) {
+        if (currentCell == 1) {
+            return getCellColor(livingCells);
+        }
+        else {
+            return getSpaceColor();
+        }
+    }
+    // Dies
+    else {
+        return getSpaceColor();
+    }
+}
+
+vec4 stepDisapear(int livingCells, int currentCell) {
+    // Born
+    if (livingCells == 3 || livingCells > 4) {
+        return getCellColor(livingCells);
+    }
+    // Survives
+    else if (livingCells > 4) {
+        if (currentCell == 1) {
+            return getCellColor(livingCells);
+        }
+        else {
+            return getSpaceColor();
+        }
+    }
+    // Dies
+    else {
+        return getSpaceColor();
+    }
+}
+
+vec4 stepStains(int livingCells, int currentCell){
+    // Born
+    if (livingCells == 3 || livingCells == 4) {
+        return getCellColor(livingCells);
+    }
+    // Survives
+    else if (livingCells < 3) {
+        if (currentCell == 1) {
+            return getCellColor(livingCells);
+        }
+        else {
+            return getSpaceColor();
+        }
+    }
+    // Dies
+    else {
+        return getSpaceColor();
+    }
+}
+
+
+
+// Simulate one step with a specific ruleset
+vec4 simulateStep(int livingCells) {
+
+    // See if the current pixel has a cell
+    int currentCell = hasCell(origPos.x,origPos.y);
+
+    if (u_clearAll == 1) {
+        return getSpaceColor();
+    }
+
+    switch (u_ruleSet) {
+        case 0:
+            return stepConway(livingCells, currentCell);
+        case 1:
+            return stepMaze(livingCells, currentCell);
+        case 2:
+            return stepAmoeba(livingCells, currentCell);
+        case 3:
+            return stepCities(livingCells, currentCell);
+        case 4:
+            return stepDisapear(livingCells, currentCell);
+        case 5:
+            return stepStains(livingCells, currentCell);
+    }
 
 }
 

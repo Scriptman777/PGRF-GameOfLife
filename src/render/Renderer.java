@@ -20,23 +20,24 @@ import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL33.*;
 
 public class Renderer {
-    private int shaderProgram3D;
-    private int shaderProgram2DDisplay;
-    private int shaderProgramGoL;
+    private final int shaderProgram3D;
+    private final int shaderProgram2DDisplay;
+    private final int shaderProgramGoL;
     private Camera camera;
     private Mat4 projection;
     private OGLTexture2D texture;
     private OGLRenderTarget renderTargetGoL;
-    private AbstractRenderable fullScreenGrid = new GridTriangles(2,2);
-    private AbstractRenderable testGrid = new GridTriangles(50,50);
+    private AbstractRenderable fullScreenGrid = new GridTriangles(200,200);
     private long window;
     private int width, height;
     private int brushSize = 2;
+    private int ruleSet = 0;
     private double ox, oy;
     private boolean mouseButton1 = false;
     private float camSpeed = 0.05f;
     private boolean pause = false;
     private boolean use3D = false;
+    private boolean clearAll = false;
 
     //Uniforms
     int loc_uView;
@@ -48,6 +49,8 @@ public class Renderer {
     int loc_uAddCells;
     int loc_uPause;
     int loc_uBrushSize;
+    int loc_uRuleSet;
+    int loc_uClearAll;
 
     public Renderer(long window, int width, int height) {
         this.window = window;
@@ -78,6 +81,8 @@ public class Renderer {
         loc_uAddCells = glGetUniformLocation(shaderProgramGoL, "u_addCells");
         loc_uPause = glGetUniformLocation(shaderProgramGoL, "u_pause");
         loc_uBrushSize = glGetUniformLocation(shaderProgramGoL, "u_brushSize");
+        loc_uRuleSet = glGetUniformLocation(shaderProgramGoL, "u_ruleSet");
+        loc_uClearAll = glGetUniformLocation(shaderProgramGoL, "u_clearAll");
 
 
         try {
@@ -90,26 +95,28 @@ public class Renderer {
 
 
         // No interpolation
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
+
+
 
         initControls();
     }
 
 
     public void draw() {
-
         drawToTexture();
         drawToScreen();
+        // If GoL was cleared, stop clearing
+        clearAll = false;
     }
 
 
     public void drawToTexture() {
         // Draw into renderTarget
+        glDisable(GL_DEPTH_TEST);
+
 
         renderTargetGoL.bind();
         glUseProgram(shaderProgramGoL);
@@ -118,9 +125,11 @@ public class Renderer {
         glUniform1i(loc_uWidth, width);
         glUniform1i(loc_uDrawX, (int) ox);
         glUniform1i(loc_uDrawY, (int) (height - oy));
-        glUniform1i(loc_uAddCells, mouseButton1 ? 1 : 0);
+        glUniform1i(loc_uAddCells, mouseButton1 && !use3D ? 1 : 0);
         glUniform1i(loc_uPause, pause ? 1 : 0);
+        glUniform1i(loc_uClearAll, clearAll ? 1 : 0);
         glUniform1i(loc_uBrushSize, brushSize);
+        glUniform1i(loc_uRuleSet, ruleSet);
 
         fullScreenGrid.draw(shaderProgramGoL);
 
@@ -128,6 +137,10 @@ public class Renderer {
     }
 
     public void drawToScreen() {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
         glBindFramebuffer(GL_FRAMEBUFFER,0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -135,20 +148,21 @@ public class Renderer {
 
         if (use3D) {
             // Draw 3D Scene
+            glEnable(GL_DEPTH_TEST);
 
             glUseProgram(shaderProgram3D);
 
             glUniformMatrix4fv(loc_uView, false, camera.getViewMatrix().floatArray());
             glUniformMatrix4fv(loc_uProj, false, projection.floatArray());
 
-            testGrid.draw(shaderProgram3D);
+            fullScreenGrid.draw(shaderProgram3D);
         }
         else {
             // Draw texture to screen
 
             glUseProgram(shaderProgram2DDisplay);
 
-            testGrid.draw(shaderProgram2DDisplay);
+            fullScreenGrid.draw(shaderProgram2DDisplay);
         }
 
 
@@ -226,6 +240,9 @@ public class Renderer {
                     case GLFW_KEY_LEFT_SHIFT:
                         use3D = !use3D;
                         break;
+                    case GLFW_KEY_LEFT_CONTROL:
+                        clearAll = !clearAll;
+                        break;
                     case GLFW_KEY_R:
                         camera = camera.mulRadius(0.9f);
                         break;
@@ -238,6 +255,14 @@ public class Renderer {
                     case GLFW_KEY_DOWN:
                         if (brushSize > 1) {
                             brushSize--;
+                        }
+                        break;
+                    case GLFW_KEY_RIGHT:
+                        ruleSet++;
+                        break;
+                    case GLFW_KEY_LEFT:
+                        if (ruleSet > 0){
+                            ruleSet--;
                         }
                         break;
                 }

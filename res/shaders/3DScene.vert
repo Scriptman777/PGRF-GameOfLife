@@ -8,7 +8,7 @@ out vec2 origPos;
 
 void main() {
 
-    float ratio = 7;
+    float ratio = 6.3;
     origPos = inPos;
     vec2 pos = inPos * ratio - (ratio/2);
 
