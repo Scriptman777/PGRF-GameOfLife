@@ -30,6 +30,7 @@ public class Renderer {
     private AbstractRenderable fullScreenGrid = new GridTriangles(200,200);
     private long window;
     private int width, height;
+    private int GoLsize;
     private int brushSize = 2;
     private int ruleSet = 0;
     private double ox, oy;
@@ -57,7 +58,9 @@ public class Renderer {
         this.width = width;
         this.height = height;
 
-        renderTargetGoL = new OGLRenderTarget(width,height);
+        GoLsize = 100;
+
+        renderTargetGoL = new OGLRenderTarget(GoLsize,GoLsize);
 
         // MVP init
         camera = new Camera()
@@ -86,7 +89,7 @@ public class Renderer {
 
 
         try {
-            texture = new OGLTexture2D("GoLInits/GolTest.png");
+            texture = new OGLTexture2D("GoLInits/GoLTest.png");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -106,6 +109,7 @@ public class Renderer {
 
 
     public void draw() {
+        chechRTSize();
         drawToTexture();
         drawToScreen();
         // If GoL was cleared, stop clearing
@@ -117,18 +121,18 @@ public class Renderer {
         // Draw into renderTarget
         glDisable(GL_DEPTH_TEST);
 
-
         renderTargetGoL.bind();
+
         glUseProgram(shaderProgramGoL);
 
-        glUniform1i(loc_uHeight, height);
-        glUniform1i(loc_uWidth, width);
-        glUniform1i(loc_uDrawX, (int) ox);
-        glUniform1i(loc_uDrawY, (int) (height - oy));
+        glUniform1i(loc_uHeight, GoLsize);
+        glUniform1i(loc_uWidth, GoLsize);
+        glUniform1f(loc_uDrawX, (float) (ox/width));
+        glUniform1f(loc_uDrawY, (float) ((height - oy)/height));
         glUniform1i(loc_uAddCells, mouseButton1 && !use3D ? 1 : 0);
         glUniform1i(loc_uPause, pause ? 1 : 0);
         glUniform1i(loc_uClearAll, clearAll ? 1 : 0);
-        glUniform1i(loc_uBrushSize, brushSize);
+        glUniform1f(loc_uBrushSize, (float) brushSize);
         glUniform1i(loc_uRuleSet, ruleSet);
 
         fullScreenGrid.draw(shaderProgramGoL);
@@ -137,6 +141,9 @@ public class Renderer {
     }
 
     public void drawToScreen() {
+        // Reset viewport that was adjusted in RenderTarget.bind
+        glViewport(0, 0, width, height);
+
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -147,7 +154,7 @@ public class Renderer {
         renderTargetGoL.getColorTexture().bind(shaderProgramGoL,"inTexture",0);
 
         if (use3D) {
-            // Draw 3D Scene
+            // Draw 3D Scene - view mode
             glEnable(GL_DEPTH_TEST);
 
             glUseProgram(shaderProgram3D);
@@ -158,7 +165,7 @@ public class Renderer {
             fullScreenGrid.draw(shaderProgram3D);
         }
         else {
-            // Draw texture to screen
+            // Draw texture to screen - edit mode
 
             glUseProgram(shaderProgram2DDisplay);
 
@@ -166,6 +173,13 @@ public class Renderer {
         }
 
 
+    }
+
+
+    private void chechRTSize() {
+        if (renderTargetGoL.getHeight() != GoLsize) {
+            renderTargetGoL = new OGLRenderTarget(GoLsize,GoLsize);
+        }
     }
 
     private void initControls() {
@@ -264,6 +278,13 @@ public class Renderer {
                         if (ruleSet > 0){
                             ruleSet--;
                         }
+                        break;
+                    case GLFW_KEY_KP_ADD:
+                        GoLsize += 100;
+                        break;
+                    case GLFW_KEY_KP_SUBTRACT:
+                        if (GoLsize > 200)
+                        GoLsize -= 100;
                         break;
                 }
             }

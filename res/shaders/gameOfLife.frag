@@ -5,11 +5,11 @@ in vec2 origPos;
 uniform int time;
 uniform int u_width;
 uniform int u_height;
-uniform int u_drawX;
-uniform int u_drawY;
+uniform float u_drawX;
+uniform float u_drawY;
 uniform int u_addCells;
 uniform int u_pause;
-uniform int u_brushSize;
+uniform float u_brushSize;
 uniform int u_ruleSet;
 uniform int u_clearAll;
 
@@ -229,7 +229,7 @@ void main() {
 
     // Draw new cells when clicked
     if (u_addCells == 1) {
-        if (abs(gl_FragCoord.x - u_drawX) < u_brushSize/2.f && abs(gl_FragCoord.y - u_drawY) < u_brushSize/2.f) {
+        if (abs(origPos.x - u_drawX) < u_brushSize/u_width && abs(origPos.y - u_drawY) < u_brushSize/u_height) {
             outColor = getCellColor(livingCells);
         }
 
