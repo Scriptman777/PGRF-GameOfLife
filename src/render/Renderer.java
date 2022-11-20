@@ -64,17 +64,16 @@ public class Renderer {
         this.width = width;
         this.height = height;
 
-        GoLsize = 6154;
+        // Size - should be the same as texture
+        //String textureToUse = "GoLInits/6154spinSwitch.png";
+        String textureToUse = "GoLInits/500BlinkerArray.png";
+
+        GoLsize = 500;
+
 
         renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
         renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
 
-        // Load in the init texture
-        try {
-            texture = new OGLTexture2D("GoLInits/6154spinSwitch.png");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
 
         // MVP init
         camera = new Camera()
@@ -104,6 +103,13 @@ public class Renderer {
         loc_uClearAll = glGetUniformLocation(shaderProgramGoL, "u_clearAll");
 
 
+
+        // Load in the init texture
+        try {
+            texture = new OGLTexture2D(textureToUse);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         texture.bind(shaderProgramGoL,"initTexture",0);
 
@@ -365,6 +371,11 @@ public class Renderer {
                 }
             }
         });
+    }
+
+    public void updateSize(int width, int height) {
+        this.width = width;
+        this.height = height;
     }
 }
 

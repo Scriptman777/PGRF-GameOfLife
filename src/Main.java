@@ -1,5 +1,6 @@
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
@@ -18,6 +19,7 @@ public class Main {
     private long window;
     private int width = 800;
     private int height = 800;
+    private Renderer renderer;
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -57,6 +59,19 @@ public class Main {
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
             if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
                 glfwSetWindowShouldClose(window, true); // We will detect this in the rendering loop
+        });
+
+        glfwSetFramebufferSizeCallback(window, new GLFWFramebufferSizeCallback() {
+            @Override
+            public void invoke(long window, int width, int height) {
+                if (width > 0 && height > 0 &&
+                        (Main.this.width != width || Main.this.height != height)) {
+                    Main.this.width = width;
+                    Main.this.height = height;
+                    renderer.updateSize(width,height);
+                }
+
+            }
         });
 
         // Get the thread stack and push a new frame
@@ -100,7 +115,7 @@ public class Main {
         glClearColor(0.f, 0.f, 0.f, 0.0f);
 
 
-        Renderer renderer = new Renderer(window, width, height);
+        renderer = new Renderer(window, width, height);
         // Run the rendering loop until the user has attempted to close
         // the window or has pressed the ESCAPE key.
         while ( !glfwWindowShouldClose(window) ) {
