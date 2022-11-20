@@ -62,14 +62,14 @@ public class Renderer {
         this.width = width;
         this.height = height;
 
-        GoLsize = 500;
+        GoLsize = 6154;
 
         renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
         renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
 
         // Load in the init texture
         try {
-            texture = new OGLTexture2D("GoLInits/Gol500test.png");
+            texture = new OGLTexture2D("GoLInits/6154spinSwitch.png");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
