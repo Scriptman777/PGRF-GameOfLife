@@ -15,7 +15,6 @@ uniform int u_clearAll;
 
 
 uniform sampler2D initTexture;
-uniform sampler2D inTexture;
 
 out vec4 outColor;
 

@@ -12,6 +12,7 @@ void main() {
     origPos = inPos;
     vec2 pos = inPos * ratio - (ratio/2);
 
+    /*
     float a = 2.f;
     float b = 0.5f;
 
@@ -22,6 +23,9 @@ void main() {
 
 
     vec4 posMVP = u_Proj * u_View * vec4(x,y,z, 1.f);
+*/
+
+    vec4 posMVP = u_Proj * u_View * vec4(inPos,0.5,1.f);
     gl_Position = posMVP;
 }
 

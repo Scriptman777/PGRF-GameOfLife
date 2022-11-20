@@ -26,7 +26,9 @@ public class Renderer {
     private Camera camera;
     private Mat4 projection;
     private OGLTexture2D texture;
-    private OGLRenderTarget renderTargetGoL;
+    private OGLRenderTarget renderTargetGoLWorker;
+    private OGLRenderTarget renderTargetGoLDisplay;
+    private OGLTexture2D.Viewer viewer;
     private AbstractRenderable fullScreenGrid = new GridTriangles(200,200);
     private long window;
     private int width, height;
@@ -36,9 +38,10 @@ public class Renderer {
     private double ox, oy;
     private boolean mouseButton1 = false;
     private float camSpeed = 0.05f;
-    private boolean pause = false;
+    private boolean pause = true;
     private boolean use3D = false;
     private boolean clearAll = false;
+    private boolean loadingPass = true;
 
     //Uniforms
     int loc_uView;
@@ -58,9 +61,10 @@ public class Renderer {
         this.width = width;
         this.height = height;
 
-        GoLsize = 100;
+        GoLsize = 500;
 
-        renderTargetGoL = new OGLRenderTarget(GoLsize,GoLsize);
+        renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
+        renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
 
         // MVP init
         camera = new Camera()
@@ -71,7 +75,7 @@ public class Renderer {
 
         // Shader init
         shaderProgram3D = ShaderUtils.loadProgram("/shaders/3DScene");
-        shaderProgram2DDisplay = ShaderUtils.loadProgram("/shaders/2DDisplay");
+        shaderProgram2DDisplay = ShaderUtils.loadProgram("/shaders/2DDisplayHelper");
         shaderProgramGoL = ShaderUtils.loadProgram("/shaders/gameOfLife");
 
         // Uniform loc get
@@ -88,8 +92,9 @@ public class Renderer {
         loc_uClearAll = glGetUniformLocation(shaderProgramGoL, "u_clearAll");
 
 
+        // Load in the init texture
         try {
-            texture = new OGLTexture2D("GoLInits/GoLTest.png");
+            texture = new OGLTexture2D("GoLInits/GoL500test.png");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -97,7 +102,7 @@ public class Renderer {
         texture.bind(shaderProgramGoL,"initTexture",0);
 
 
-        // No interpolation
+        viewer = new OGLTexture2D.Viewer();
 
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
@@ -109,19 +114,38 @@ public class Renderer {
 
 
     public void draw() {
+
         chechRTSize();
-        drawToTexture();
+        drawStepWorker();
+        drawFrontBuffer();
         drawToScreen();
         // If GoL was cleared, stop clearing
         clearAll = false;
+        loadingPass = false;
+
+
+
+        // Viewer
+        viewer.view(renderTargetGoLWorker.getColorTexture(),-1,-1,0.5);
+        viewer.view(renderTargetGoLDisplay.getColorTexture(),-1,-0.5,0.5);
     }
 
 
-    public void drawToTexture() {
+    public void drawStepWorker() {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
         // Draw into renderTarget
         glDisable(GL_DEPTH_TEST);
 
-        renderTargetGoL.bind();
+        if (!loadingPass) {
+            renderTargetGoLDisplay.bindColorTexture(shaderProgramGoL,"initTexture",0);
+        }
+
+
+        renderTargetGoLWorker.bind();
 
         glUseProgram(shaderProgramGoL);
 
@@ -140,18 +164,29 @@ public class Renderer {
 
     }
 
-    public void drawToScreen() {
-        // Reset viewport that was adjusted in RenderTarget.bind
-        glViewport(0, 0, width, height);
-
+    public void drawFrontBuffer() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+        renderTargetGoLWorker.getColorTexture().bind(shaderProgram2DDisplay,"toDisplayTexture",0);
+        renderTargetGoLDisplay.bind();
+
+        glUseProgram(shaderProgram2DDisplay);
+
+        fullScreenGrid.draw(shaderProgram2DDisplay);
+
+    }
+
+    public void drawToScreen() {
+        // Reset viewport that was adjusted in RenderTarget.bind
+        glViewport(0, 0, width, height);
+
+        renderTargetGoLDisplay.getColorTexture().bind(shaderProgram2DDisplay, "fromDisplayTexture",0);
+
         glBindFramebuffer(GL_FRAMEBUFFER,0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        renderTargetGoL.getColorTexture().bind(shaderProgramGoL,"inTexture",0);
 
         if (use3D) {
             // Draw 3D Scene - view mode
@@ -177,8 +212,9 @@ public class Renderer {
 
 
     private void chechRTSize() {
-        if (renderTargetGoL.getHeight() != GoLsize) {
-            renderTargetGoL = new OGLRenderTarget(GoLsize,GoLsize);
+        if (renderTargetGoLWorker.getHeight() != GoLsize) {
+            renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
+            renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
         }
     }
 
