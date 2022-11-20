@@ -42,6 +42,7 @@ public class Renderer {
     private boolean use3D = false;
     private boolean clearAll = false;
     private boolean loadingPass = true;
+    private boolean displayViewer = false;
 
     //Uniforms
     int loc_uView;
@@ -65,6 +66,13 @@ public class Renderer {
 
         renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
         renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
+
+        // Load in the init texture
+        try {
+            texture = new OGLTexture2D("GoLInits/Gol500test.png");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         // MVP init
         camera = new Camera()
@@ -92,13 +100,6 @@ public class Renderer {
         loc_uClearAll = glGetUniformLocation(shaderProgramGoL, "u_clearAll");
 
 
-        // Load in the init texture
-        try {
-            texture = new OGLTexture2D("GoLInits/GoL500test.png");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
         texture.bind(shaderProgramGoL,"initTexture",0);
 
 
@@ -125,18 +126,29 @@ public class Renderer {
 
 
 
-        // Viewer
-        viewer.view(renderTargetGoLWorker.getColorTexture(),-1,-1,0.5);
-        viewer.view(renderTargetGoLDisplay.getColorTexture(),-1,-0.5,0.5);
+        if (displayViewer) {
+            // Viewer
+            viewer.view(renderTargetGoLWorker.getColorTexture(),-1,-1,0.5);
+            viewer.view(renderTargetGoLDisplay.getColorTexture(),-1,-0.5,0.5);
+        }
+
     }
 
-
-    public void drawStepWorker() {
+    /**
+     * An unfortunate solution to some part of lwjgl utils turning interpolation back on
+     */
+    public void doNotInterpolate() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    }
 
+
+    public void drawStepWorker() {
+
+
+        doNotInterpolate();
         // Draw into renderTarget
         glDisable(GL_DEPTH_TEST);
 
@@ -165,6 +177,8 @@ public class Renderer {
     }
 
     public void drawFrontBuffer() {
+        doNotInterpolate();
+
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -180,6 +194,8 @@ public class Renderer {
     }
 
     public void drawToScreen() {
+        doNotInterpolate();
+
         // Reset viewport that was adjusted in RenderTarget.bind
         glViewport(0, 0, width, height);
 
@@ -292,6 +308,9 @@ public class Renderer {
                         break;
                     case GLFW_KEY_LEFT_CONTROL:
                         clearAll = !clearAll;
+                        break;
+                    case GLFW_KEY_LEFT_ALT:
+                        displayViewer = !displayViewer;
                         break;
                     case GLFW_KEY_R:
                         camera = camera.mulRadius(0.9f);
