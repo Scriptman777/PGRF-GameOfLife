@@ -35,6 +35,7 @@ public class Renderer {
     private int GoLsize;
     private int brushSize = 2;
     private int ruleSet = 0;
+    private int bodyID = 0;
     private double ox, oy;
     private boolean mouseButton1 = false;
     private float camSpeed = 0.05f;
@@ -56,6 +57,7 @@ public class Renderer {
     int loc_uBrushSize;
     int loc_uRuleSet;
     int loc_uClearAll;
+    int loc_uBodyID;
 
     public Renderer(long window, int width, int height) {
         this.window = window;
@@ -89,6 +91,8 @@ public class Renderer {
         // Uniform loc get
         loc_uView = glGetUniformLocation(shaderProgram3D, "u_View");
         loc_uProj = glGetUniformLocation(shaderProgram3D, "u_Proj");
+        loc_uBodyID = glGetUniformLocation(shaderProgram3D, "u_bodyID");
+
         loc_uWidth = glGetUniformLocation(shaderProgramGoL, "u_width");
         loc_uHeight = glGetUniformLocation(shaderProgramGoL, "u_height");
         loc_uDrawX = glGetUniformLocation(shaderProgramGoL, "u_drawX");
@@ -100,20 +104,20 @@ public class Renderer {
         loc_uClearAll = glGetUniformLocation(shaderProgramGoL, "u_clearAll");
 
 
-        texture.bind(shaderProgramGoL,"initTexture",0);
 
+        texture.bind(shaderProgramGoL,"initTexture",0);
 
         viewer = new OGLTexture2D.Viewer();
 
-
         glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
-
-
 
         initControls();
     }
 
 
+    /**
+     * Main draw loop with optional buffer viewer
+     */
     public void draw() {
 
         chechRTSize();
@@ -123,7 +127,6 @@ public class Renderer {
         // If GoL was cleared, stop clearing
         clearAll = false;
         loadingPass = false;
-
 
 
         if (displayViewer) {
@@ -145,6 +148,9 @@ public class Renderer {
     }
 
 
+    /**
+     * Simulates one step of Game of Life
+     */
     public void drawStepWorker() {
 
 
@@ -172,10 +178,11 @@ public class Renderer {
         glUniform1i(loc_uRuleSet, ruleSet);
 
         fullScreenGrid.draw(shaderProgramGoL);
-
-
     }
 
+    /**
+     * Buffer that holds a previous state for the worker, also used as display
+     */
     public void drawFrontBuffer() {
         doNotInterpolate();
 
@@ -193,6 +200,9 @@ public class Renderer {
 
     }
 
+    /**
+     * Draw result to screen or on a 3D object
+     */
     public void drawToScreen() {
         doNotInterpolate();
 
@@ -212,6 +222,7 @@ public class Renderer {
 
             glUniformMatrix4fv(loc_uView, false, camera.getViewMatrix().floatArray());
             glUniformMatrix4fv(loc_uProj, false, projection.floatArray());
+            glUniform1i(loc_uBodyID, bodyID);
 
             fullScreenGrid.draw(shaderProgram3D);
         }
@@ -226,7 +237,9 @@ public class Renderer {
 
     }
 
-
+    /**
+     * Checks if user changed the buffer size and creates new ones
+     */
     private void chechRTSize() {
         if (renderTargetGoLWorker.getHeight() != GoLsize) {
             renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
@@ -340,6 +353,14 @@ public class Renderer {
                     case GLFW_KEY_KP_SUBTRACT:
                         if (GoLsize > 200)
                         GoLsize -= 100;
+                        break;
+                    case GLFW_KEY_KP_DIVIDE:
+                        bodyID++;
+                        break;
+                    case GLFW_KEY_KP_MULTIPLY:
+                        if (bodyID > 0) {
+                            bodyID--;
+                        }
                         break;
                 }
             }
