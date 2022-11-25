@@ -103,13 +103,7 @@ public class Renderer {
         loc_uClearAll = glGetUniformLocation(shaderProgramGoL, "u_clearAll");
 
 
-
-        // Load in the init texture
-        try {
-            texture = new OGLTexture2D(textureToUse);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        loadInitTexture(textureToUse);
 
         texture.bind(shaderProgramGoL,"initTexture",0);
 
@@ -126,7 +120,7 @@ public class Renderer {
      */
     public void draw() {
 
-        chechRTSize();
+        updateRTSize();
         drawStepWorker();
         drawFrontBuffer();
         drawToScreen();
@@ -246,7 +240,7 @@ public class Renderer {
     /**
      * Checks if user changed the buffer size and creates new ones
      */
-    private void chechRTSize() {
+    private void updateRTSize() {
         if (renderTargetGoLWorker.getHeight() != GoLsize) {
             renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
             renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
@@ -301,7 +295,6 @@ public class Renderer {
 
         });
 
-        // Movement keys (based on samples)
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
             if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
                 glfwSetWindowShouldClose(window, true); // We will detect this in the rendering loop
@@ -368,9 +361,44 @@ public class Renderer {
                             bodyID--;
                         }
                         break;
+                    case GLFW_KEY_KP_1:
+                        GoLsize = 100;
+                        break;
+                    case GLFW_KEY_KP_2:
+                        GoLsize = 500;
+                        updateRTSize();
+                        loadInitTexture("GoLInits/500BlinkerArray.png");
+                        loadingPass = true;
+                        break;
+                    case GLFW_KEY_KP_3:
+                        GoLsize = 800;
+                        updateRTSize();
+                        loadInitTexture("GoLInits/800GoLTest.png");
+                        loadingPass = true;
+                        break;
+                    case GLFW_KEY_KP_4:
+                        GoLsize = 1000;
+                        break;
+                    case GLFW_KEY_KP_5:
+                        GoLsize = 6154;
+                        updateRTSize();
+                        loadInitTexture("GoLInits/6154spinSwitch.png");
+                        loadingPass = true;
+                        break;
                 }
+
             }
         });
+    }
+
+    public void loadInitTexture(String textureToUse) {
+        try {
+            texture = new OGLTexture2D(textureToUse);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        texture.bind(shaderProgramGoL,"initTexture",0);
     }
 
     public void updateSize(int width, int height) {
