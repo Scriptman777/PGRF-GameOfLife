@@ -44,6 +44,7 @@ public class Renderer {
     private boolean clearAll = false;
     private boolean loadingPass = true;
     private boolean displayViewer = false;
+    private boolean useRepeat = true;
 
     //Uniforms
     int loc_uView;
@@ -65,10 +66,9 @@ public class Renderer {
         this.height = height;
 
         // Size - should be the same as texture
-        //String textureToUse = "GoLInits/6154spinSwitch.png";
+        GoLsize = 500;
         String textureToUse = "GoLInits/500BlinkerArray.png";
 
-        GoLsize = 500;
 
 
         renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
@@ -120,19 +120,22 @@ public class Renderer {
      */
     public void draw() {
 
+        // If the size has changed, new Render targets need to be created
         updateRTSize();
+        // Simulate one step
         drawStepWorker();
+        // Save step for next step and for display
         drawFrontBuffer();
+        // Display step as 2D texture or on a 3D object
         drawToScreen();
         // If GoL was cleared, stop clearing
         clearAll = false;
         loadingPass = false;
 
-
+        // Viewer to see the buffers
         if (displayViewer) {
-            // Viewer
-            viewer.view(renderTargetGoLWorker.getColorTexture(),-1,-1,0.5);
-            viewer.view(renderTargetGoLDisplay.getColorTexture(),-1,-0.5,0.5);
+            viewer.view(renderTargetGoLWorker.getColorTexture(),-1,-1,1);
+            viewer.view(renderTargetGoLDisplay.getColorTexture(),-1,0,1);
         }
 
     }
@@ -143,8 +146,15 @@ public class Renderer {
     public void doNotInterpolate() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        if (useRepeat) {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        }
+        else {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        }
+
     }
 
 
@@ -361,29 +371,48 @@ public class Renderer {
                             bodyID--;
                         }
                         break;
+                    case GLFW_KEY_KP_0:
+                        useRepeat = !useRepeat;
+                        break;
                     case GLFW_KEY_KP_1:
                         GoLsize = 100;
+                        updateRTSize();
+                        loadInitTexture("GoLInits/100GliderGun.png");
+                        loadingPass = true;
+                        useRepeat = false;
+                        ruleSet = 0;
                         break;
                     case GLFW_KEY_KP_2:
                         GoLsize = 500;
                         updateRTSize();
-                        loadInitTexture("GoLInits/500BlinkerArray.png");
+                        loadInitTexture("GoLInits/500Snails.png");
                         loadingPass = true;
+                        useRepeat = true;
+                        ruleSet = 0;
                         break;
                     case GLFW_KEY_KP_3:
                         GoLsize = 800;
                         updateRTSize();
-                        loadInitTexture("GoLInits/800GoLTest.png");
+                        loadInitTexture("GoLInits/800SpaceshipGun.png");
                         loadingPass = true;
+                        useRepeat = true;
+                        ruleSet = 0;
                         break;
                     case GLFW_KEY_KP_4:
                         GoLsize = 1000;
+                        updateRTSize();
+                        loadInitTexture("GoLInits/1000LargeSpaceshipGun.png");
+                        loadingPass = true;
+                        useRepeat = false;
+                        ruleSet = 0;
                         break;
                     case GLFW_KEY_KP_5:
                         GoLsize = 6154;
                         updateRTSize();
                         loadInitTexture("GoLInits/6154spinSwitch.png");
                         loadingPass = true;
+                        useRepeat = true;
+                        ruleSet = 0;
                         break;
                 }
 

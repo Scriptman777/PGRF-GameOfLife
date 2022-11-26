@@ -1,4 +1,7 @@
 
+# This script creates a png file from the RLE format used for Game of Life patters found on the Life Wiki (https://conwaylife.com/wiki/)
+
+
 from PIL import Image
 
 #x
