@@ -4,6 +4,7 @@ uniform sampler2D toPostProcTexture;
 uniform int u_colorMode;
 uniform int u_width;
 uniform int u_height;
+uniform float u_time;
 
 in vec2 origPos;
 
@@ -43,7 +44,7 @@ void main() {
 
     if (isCell){
         switch (u_colorMode) {
-            // White only
+            // White
             case 0:
                 outColor = vec4(1,1,1,1);
                 break;
@@ -61,6 +62,18 @@ void main() {
                 vec3 mixedCold = mix(coldColor1,coldColor2,mixNum);
                 outColor = vec4(mixedCold,1.f);
                 break;
+            // Disco
+            case 3:
+                vec3 discoColor1 = vec3(1.f,1.f,0.f);
+                vec3 discoColor2 = vec3(1.f,0.f,1.f);
+                vec3 discoColor3 = vec3(1.f,0.f,0.f);
+                vec3 discoColor4 = vec3(0.f,1.f,1.f);
+                vec3 mixedDisco1 = mix(discoColor1,discoColor2,sin(u_time/5));
+                vec3 mixedDisco2 = mix(discoColor3,discoColor4,sin(u_time/6));
+                vec3 mixedDisco = mix(mixedDisco1,mixedDisco2,sin(u_time/7));
+                outColor = vec4(mixedDisco,1.f);
+                break;
+
         }
     }
     else {

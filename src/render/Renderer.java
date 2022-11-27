@@ -42,6 +42,7 @@ public class Renderer {
     private double ox, oy;
     private boolean mouseButton1 = false;
     private float camSpeed = 0.05f;
+    private float time = 0.f;
     private boolean pause = true;
     private boolean use3D = false;
     private boolean clearAll = false;
@@ -65,6 +66,7 @@ public class Renderer {
     int loc_uColorMode;
     int loc_uWidthPost;
     int loc_uHeightPost;
+    int loc_uTime;
 
     public Renderer(long window, int width, int height) {
         this.window = window;
@@ -114,6 +116,7 @@ public class Renderer {
         loc_uRuleSet = glGetUniformLocation(shaderProgramGoL, "u_ruleSet");
         loc_uClearAll = glGetUniformLocation(shaderProgramGoL, "u_clearAll");
         loc_uColorMode = glGetUniformLocation(shaderProgram2DPostProcess, "u_colorMode");
+        loc_uTime = glGetUniformLocation(shaderProgram2DPostProcess, "u_time");
 
 
         loadInitTexture(textureToUse);
@@ -148,6 +151,8 @@ public class Renderer {
         // If GoL was cleared, stop clearing
         clearAll = false;
         loadingPass = false;
+
+        time += 0.1;
 
         // Viewer to see the buffers
         if (displayViewer) {
@@ -236,6 +241,7 @@ public class Renderer {
         glUniform1i(loc_uHeightPost, GoLsize);
         glUniform1i(loc_uWidthPost, GoLsize);
         glUniform1i(loc_uColorMode, colorMode);
+        glUniform1f(loc_uTime,time);
 
         fullScreenGrid.draw(shaderProgram2DPostProcess);
     }
