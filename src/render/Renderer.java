@@ -21,13 +21,15 @@ import static org.lwjgl.opengl.GL33.*;
 
 public class Renderer {
     private final int shaderProgram3D;
-    private final int shaderProgram2DDisplay;
+    private final int shaderProgram2DDisplayHelper;
     private final int shaderProgramGoL;
+    private final int shaderProgram2DPostProcess;
     private Camera camera;
     private Mat4 projection;
     private OGLTexture2D texture;
     private OGLRenderTarget renderTargetGoLWorker;
     private OGLRenderTarget renderTargetGoLDisplay;
+    private OGLRenderTarget renderTargetGoLPostProcess;
     private OGLTexture2D.Viewer viewer;
     private AbstractRenderable fullScreenGrid = new GridTriangles(200,200);
     private long window;
@@ -35,6 +37,7 @@ public class Renderer {
     private int GoLsize;
     private int brushSize = 2;
     private int ruleSet = 0;
+    private int colorMode = 0;
     private int bodyID = 0;
     private double ox, oy;
     private boolean mouseButton1 = false;
@@ -49,8 +52,8 @@ public class Renderer {
     //Uniforms
     int loc_uView;
     int loc_uProj;
-    int loc_uHeight;
-    int loc_uWidth;
+    int loc_uHeightWorker;
+    int loc_uWidthWorker;
     int loc_uDrawX;
     int loc_uDrawY;
     int loc_uAddCells;
@@ -59,6 +62,9 @@ public class Renderer {
     int loc_uRuleSet;
     int loc_uClearAll;
     int loc_uBodyID;
+    int loc_uColorMode;
+    int loc_uWidthPost;
+    int loc_uHeightPost;
 
     public Renderer(long window, int width, int height) {
         this.window = window;
@@ -73,6 +79,7 @@ public class Renderer {
 
         renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
         renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
+        renderTargetGoLPostProcess = new OGLRenderTarget(GoLsize,GoLsize);
 
 
         // MVP init
@@ -84,7 +91,8 @@ public class Renderer {
 
         // Shader init
         shaderProgram3D = ShaderUtils.loadProgram("/shaders/3DScene");
-        shaderProgram2DDisplay = ShaderUtils.loadProgram("/shaders/2DDisplayHelper");
+        shaderProgram2DDisplayHelper = ShaderUtils.loadProgram("/shaders/2DDisplayHelper");
+        shaderProgram2DPostProcess = ShaderUtils.loadProgram("/shaders/2DDisplayPostProcessor");
         shaderProgramGoL = ShaderUtils.loadProgram("/shaders/gameOfLife");
 
         // Uniform loc get
@@ -92,8 +100,12 @@ public class Renderer {
         loc_uProj = glGetUniformLocation(shaderProgram3D, "u_Proj");
         loc_uBodyID = glGetUniformLocation(shaderProgram3D, "u_bodyID");
 
-        loc_uWidth = glGetUniformLocation(shaderProgramGoL, "u_width");
-        loc_uHeight = glGetUniformLocation(shaderProgramGoL, "u_height");
+        // Needs to get locations twice, since different shader programs have different places in memory
+        loc_uWidthWorker = glGetUniformLocation(shaderProgramGoL, "u_width");
+        loc_uHeightWorker = glGetUniformLocation(shaderProgramGoL, "u_height");
+        loc_uWidthPost = glGetUniformLocation(shaderProgram2DPostProcess, "u_width");
+        loc_uHeightPost = glGetUniformLocation(shaderProgram2DPostProcess, "u_height");
+
         loc_uDrawX = glGetUniformLocation(shaderProgramGoL, "u_drawX");
         loc_uDrawY = glGetUniformLocation(shaderProgramGoL, "u_drawY");
         loc_uAddCells = glGetUniformLocation(shaderProgramGoL, "u_addCells");
@@ -101,6 +113,7 @@ public class Renderer {
         loc_uBrushSize = glGetUniformLocation(shaderProgramGoL, "u_brushSize");
         loc_uRuleSet = glGetUniformLocation(shaderProgramGoL, "u_ruleSet");
         loc_uClearAll = glGetUniformLocation(shaderProgramGoL, "u_clearAll");
+        loc_uColorMode = glGetUniformLocation(shaderProgram2DPostProcess, "u_colorMode");
 
 
         loadInitTexture(textureToUse);
@@ -120,22 +133,27 @@ public class Renderer {
      */
     public void draw() {
 
+
         // If the size has changed, new Render targets need to be created
         updateRTSize();
         // Simulate one step
         drawStepWorker();
         // Save step for next step and for display
         drawFrontBuffer();
+        // Do some post processing
+        doPostProcess();
         // Display step as 2D texture or on a 3D object
         drawToScreen();
+
         // If GoL was cleared, stop clearing
         clearAll = false;
         loadingPass = false;
 
         // Viewer to see the buffers
         if (displayViewer) {
-            viewer.view(renderTargetGoLWorker.getColorTexture(),-1,-1,1);
-            viewer.view(renderTargetGoLDisplay.getColorTexture(),-1,0,1);
+            viewer.view(renderTargetGoLWorker.getColorTexture(),-1,-1,0.5);
+            viewer.view(renderTargetGoLDisplay.getColorTexture(),-1,-0.5,0.5);
+            viewer.view(renderTargetGoLPostProcess.getColorTexture(),-1,0,0.5);
         }
 
     }
@@ -177,8 +195,8 @@ public class Renderer {
 
         glUseProgram(shaderProgramGoL);
 
-        glUniform1i(loc_uHeight, GoLsize);
-        glUniform1i(loc_uWidth, GoLsize);
+        glUniform1i(loc_uHeightWorker, GoLsize);
+        glUniform1i(loc_uWidthWorker, GoLsize);
         glUniform1f(loc_uDrawX, (float) (ox/width));
         glUniform1f(loc_uDrawY, (float) ((height - oy)/height));
         glUniform1i(loc_uAddCells, mouseButton1 && !use3D ? 1 : 0);
@@ -196,18 +214,30 @@ public class Renderer {
     public void drawFrontBuffer() {
         doNotInterpolate();
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        renderTargetGoLWorker.getColorTexture().bind(shaderProgram2DDisplayHelper,"toDisplayTexture",0);
 
-        renderTargetGoLWorker.getColorTexture().bind(shaderProgram2DDisplay,"toDisplayTexture",0);
         renderTargetGoLDisplay.bind();
 
-        glUseProgram(shaderProgram2DDisplay);
+        glUseProgram(shaderProgram2DDisplayHelper);
 
-        fullScreenGrid.draw(shaderProgram2DDisplay);
+        fullScreenGrid.draw(shaderProgram2DDisplayHelper);
 
+    }
+
+    public void doPostProcess() {
+        doNotInterpolate();
+
+        renderTargetGoLDisplay.getColorTexture().bind(shaderProgram2DPostProcess,"toPostProcTexture",0);
+
+        renderTargetGoLPostProcess.bind();
+
+        glUseProgram(shaderProgram2DPostProcess);
+
+        glUniform1i(loc_uHeightPost, GoLsize);
+        glUniform1i(loc_uWidthPost, GoLsize);
+        glUniform1i(loc_uColorMode, colorMode);
+
+        fullScreenGrid.draw(shaderProgram2DPostProcess);
     }
 
     /**
@@ -219,7 +249,7 @@ public class Renderer {
         // Reset viewport that was adjusted in RenderTarget.bind
         glViewport(0, 0, width, height);
 
-        renderTargetGoLDisplay.getColorTexture().bind(shaderProgram2DDisplay, "fromDisplayTexture",0);
+        renderTargetGoLPostProcess.getColorTexture().bind(shaderProgram2DDisplayHelper, "fromPostProcTexture",0);
 
         glBindFramebuffer(GL_FRAMEBUFFER,0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -239,12 +269,10 @@ public class Renderer {
         else {
             // Draw texture to screen - edit mode
 
-            glUseProgram(shaderProgram2DDisplay);
+            glUseProgram(shaderProgram2DDisplayHelper);
 
-            fullScreenGrid.draw(shaderProgram2DDisplay);
+            fullScreenGrid.draw(shaderProgram2DDisplayHelper);
         }
-
-
     }
 
     /**
@@ -254,6 +282,7 @@ public class Renderer {
         if (renderTargetGoLWorker.getHeight() != GoLsize) {
             renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
             renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
+            renderTargetGoLPostProcess = new OGLRenderTarget(GoLsize,GoLsize);
         }
     }
 
@@ -357,11 +386,12 @@ public class Renderer {
                         }
                         break;
                     case GLFW_KEY_KP_ADD:
-                        GoLsize += 100;
+                        colorMode++;
                         break;
                     case GLFW_KEY_KP_SUBTRACT:
-                        if (GoLsize > 200)
-                        GoLsize -= 100;
+                        if (colorMode > 0) {
+                            colorMode--;
+                        }
                         break;
                     case GLFW_KEY_KP_DIVIDE:
                         bodyID++;
@@ -421,6 +451,7 @@ public class Renderer {
     }
 
     public void loadInitTexture(String textureToUse) {
+
         try {
             texture = new OGLTexture2D(textureToUse);
         } catch (IOException e) {
