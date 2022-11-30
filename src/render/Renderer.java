@@ -13,6 +13,8 @@ import transforms.Mat4;
 import transforms.Mat4PerspRH;
 import transforms.Vec3D;
 
+import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.nio.DoubleBuffer;
 
@@ -32,6 +34,7 @@ public class Renderer {
     private OGLRenderTarget renderTargetGoLPostProcess;
     private OGLTexture2D.Viewer viewer;
     private AbstractRenderable fullScreenGrid = new GridTriangles(200,200);
+    private JFrame helpFrame;
     private long window;
     private int width, height;
     private int GoLsize;
@@ -128,6 +131,55 @@ public class Renderer {
         glPolygonMode(GL_FRONT_AND_BACK, GL_TRIANGLES);
 
         initControls();
+        initHelp();
+    }
+
+    private void initHelp() {
+        helpFrame = new JFrame("PGRF3 - Game of Life controls");
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout());
+        JLabel titleLabel = new JLabel("Game of Life controls:");
+        titleLabel.setFont(new Font("Sans-serif", Font.PLAIN, 23));
+
+        JTextArea controlsArea = new JTextArea(
+                "Welcome to the Game of Life PGRF3 project. The program has two main modes, edit and display, each with different controls. You can display this help screen at any time using H \n" +
+                        "\n \n GLOBAL CONTROLS: \n \n" +
+                        "SHIFT - Change from edit mode to observe mode \n" +
+                        "CTRL - Clear the Game area \n" +
+                        "SPACE - Pause the simulation \n" +
+                        "ALT - Display the buffer viewer \n" +
+                        "LEFT/RIGHT - Change Game of Life ruleset \n" +
+                        "KEYPAD PLUS/MINUS - Change color mode \n" +
+                        "KEYPAD 1-5 - Select from 5 life presets \n" +
+                        "KEYPAD 0 - Toggle edge wrap \n" +
+                        "H - Display help \n" +
+
+                        "\n \n EDIT MODE: \n \n" +
+                        "LEFT CLICK - draw new cells on the screen \n" +
+                        "UP/DOWN - Change the size of the brush \n \n" +
+
+                        "\n \n OBSERVE MODE: \n \n" +
+                        "WASD - Move camera \n" +
+                        "LEFT CLICK - Turn camera \n" +
+                        "KEYPAD MUL/DIV - Change 3D object \n"
+
+
+                ,6,50);
+
+        controlsArea.setFont(new Font("Sans-serif", Font.PLAIN, 14));
+        controlsArea.setLineWrap(true);
+        controlsArea.setWrapStyleWord(true);
+        controlsArea.setOpaque(false);
+        controlsArea.setEditable(false);
+
+
+        panel.add(titleLabel);
+        panel.add(controlsArea);
+        helpFrame.add(panel);
+        helpFrame.setSize(600, 700);
+        helpFrame.setLocationRelativeTo(null);
+        helpFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        helpFrame.setVisible(true);
     }
 
 
@@ -369,12 +421,6 @@ public class Renderer {
                     case GLFW_KEY_LEFT_ALT:
                         displayViewer = !displayViewer;
                         break;
-                    case GLFW_KEY_R:
-                        camera = camera.mulRadius(0.9f);
-                        break;
-                    case GLFW_KEY_F:
-                        camera = camera.mulRadius(1.1f);
-                        break;
                     case GLFW_KEY_UP:
                         brushSize++;
                         break;
@@ -384,7 +430,9 @@ public class Renderer {
                         }
                         break;
                     case GLFW_KEY_RIGHT:
-                        ruleSet++;
+                        if (ruleSet < 5){
+                            ruleSet++;
+                        }
                         break;
                     case GLFW_KEY_LEFT:
                         if (ruleSet > 0){
@@ -392,7 +440,9 @@ public class Renderer {
                         }
                         break;
                     case GLFW_KEY_KP_ADD:
-                        colorMode++;
+                        if (colorMode < 3) {
+                            colorMode++;
+                        }
                         break;
                     case GLFW_KEY_KP_SUBTRACT:
                         if (colorMode > 0) {
@@ -400,7 +450,9 @@ public class Renderer {
                         }
                         break;
                     case GLFW_KEY_KP_DIVIDE:
-                        bodyID++;
+                        if (bodyID < 2) {
+                            bodyID++;
+                        }
                         break;
                     case GLFW_KEY_KP_MULTIPLY:
                         if (bodyID > 0) {
@@ -450,6 +502,9 @@ public class Renderer {
                         useRepeat = true;
                         ruleSet = 0;
                         break;
+                    case GLFW_KEY_H:
+                        helpFrame.setVisible(true);
+                        break;
                 }
 
             }
@@ -470,6 +525,10 @@ public class Renderer {
     public void updateSize(int width, int height) {
         this.width = width;
         this.height = height;
+    }
+
+    public void closeHelp() {
+        helpFrame.dispose();
     }
 }
 

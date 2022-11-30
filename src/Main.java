@@ -28,6 +28,7 @@ public class Main {
         loop();
 
         // Free the window callbacks and destroy the window
+        renderer.closeHelp();
         glfwFreeCallbacks(window);
         glfwDestroyWindow(window);
 
