@@ -1,5 +1,14 @@
 #version 330
 
+
+/*
+Game of Life shader program is used to simulate the cells on a texture, it also allows for drawing new cells
+and changing the rules by which cells behave
+
+The fragment shader does the actual computation based on the previous state. It asks for the amount of cells
+living next to the current one and then applies the chosen ruleset
+*/
+
 in vec2 origPos;
 
 uniform int time;
@@ -12,7 +21,6 @@ uniform int u_pause;
 uniform float u_brushSize;
 uniform int u_ruleSet;
 uniform int u_clearAll;
-
 
 uniform sampler2D initTexture;
 

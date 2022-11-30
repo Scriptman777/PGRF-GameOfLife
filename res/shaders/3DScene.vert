@@ -1,4 +1,12 @@
 #version 330
+
+
+/*
+3DScene shader program is used render a scene with an object that will then have the Game of Life mapped onto it
+
+The vertex shader bends the grid into one of 3 different shapes, Flat, Donut and Sphere
+*/
+
 in vec2 inPos;
 
 uniform mat4 u_View;

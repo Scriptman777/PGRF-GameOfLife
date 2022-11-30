@@ -80,8 +80,6 @@ public class Renderer {
         GoLsize = 500;
         String textureToUse = "GoLInits/500BlinkerArray.png";
 
-
-
         renderTargetGoLWorker = new OGLRenderTarget(GoLsize,GoLsize);
         renderTargetGoLDisplay = new OGLRenderTarget(GoLsize,GoLsize);
         renderTargetGoLPostProcess = new OGLRenderTarget(GoLsize,GoLsize);
@@ -121,7 +119,6 @@ public class Renderer {
         loc_uColorMode = glGetUniformLocation(shaderProgram2DPostProcess, "u_colorMode");
         loc_uTime = glGetUniformLocation(shaderProgram2DPostProcess, "u_time");
 
-
         loadInitTexture(textureToUse);
 
         texture.bind(shaderProgramGoL,"initTexture",0);
@@ -134,6 +131,9 @@ public class Renderer {
         initHelp();
     }
 
+    /**
+     * Displays a help window with the controls
+     */
     private void initHelp() {
         helpFrame = new JFrame("PGRF3 - Game of Life controls");
         JPanel panel = new JPanel();
@@ -171,7 +171,6 @@ public class Renderer {
         controlsArea.setWrapStyleWord(true);
         controlsArea.setOpaque(false);
         controlsArea.setEditable(false);
-
 
         panel.add(titleLabel);
         panel.add(controlsArea);
@@ -281,6 +280,9 @@ public class Renderer {
 
     }
 
+    /**
+     * Process the texture to change color
+     */
     public void doPostProcess() {
         doNotInterpolate();
 
@@ -344,10 +346,13 @@ public class Renderer {
         }
     }
 
+
+    /**
+     * Sets all the necessary controls
+     */
     private void initControls() {
 
-
-        // Mose move (from samples)
+        // Mouse move (from samples)
         glfwSetCursorPosCallback(window, new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double x, double y) {
@@ -360,7 +365,7 @@ public class Renderer {
             }
         });
 
-        // Mose click (from samples)
+        // Mouse click (from samples)
         glfwSetMouseButtonCallback(window, new GLFWMouseButtonCallback() {
 
             @Override
@@ -440,7 +445,7 @@ public class Renderer {
                         }
                         break;
                     case GLFW_KEY_KP_ADD:
-                        if (colorMode < 3) {
+                        if (colorMode < 6) {
                             colorMode++;
                         }
                         break;
@@ -511,6 +516,9 @@ public class Renderer {
         });
     }
 
+    /**
+     * Loads one of the initial textures with interesting GoL setups
+     */
     public void loadInitTexture(String textureToUse) {
 
         try {
@@ -522,11 +530,17 @@ public class Renderer {
         texture.bind(shaderProgramGoL,"initTexture",0);
     }
 
+    /**
+     * Updates buffer sizes
+     */
     public void updateSize(int width, int height) {
         this.width = width;
         this.height = height;
     }
 
+    /**
+     * Disposes of the help window
+     */
     public void closeHelp() {
         helpFrame.dispose();
     }
